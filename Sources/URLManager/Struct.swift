@@ -41,7 +41,7 @@ public struct URLManager: Request {
         _ = try await performRequest()
     }
 
-    private func performRequest() async throws -> (Data, HTTPURLResponse) {
+    public func performRequest() async throws -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
