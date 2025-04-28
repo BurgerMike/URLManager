@@ -7,15 +7,14 @@
 
 import Foundation
 
-public protocol URLManagerProtocol {
-    var url: URL { get }
-    var method: HTTPMethod { get }
-    var headers: [String: String] { get }
-    var body: Data? { get }
-}
-
-public protocol Request: URLManagerProtocol {
-    func send<D: Decodable>(as type: D.Type) async throws -> D
-    func sendRaw() async throws -> Data
-    func sendWithoutResponse() async throws
+public protocol RequestProtocol {
+    var url: URL { get set }
+    var method: HTTPMethod { get set }
+    var headers: [String: String] { get set }
+    var body: Data? { get set }
+    
+    func get<D: Decodable>(as type: D.Type) async throws -> D
+    func post<D: Decodable>(as type: D.Type) async throws -> D
+    func put<D: Decodable>(as type: D.Type) async throws -> D
+    func delete<D: Decodable>(as type: D.Type) async throws -> D
 }

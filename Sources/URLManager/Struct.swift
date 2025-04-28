@@ -7,60 +7,68 @@
 
 import Foundation
 
-public struct URLManager: Request {
+public struct URLRequestManager: RequestProtocol {
+    
     public var url: URL
     public var method: HTTPMethod
     public var headers: [String: String]
     public var body: Data?
-
-    public init(url: URL, method: HTTPMethod, headers: [String: String] = [:], body: Data? = nil) {
+    
+    public init(url: URL, method: HTTPMethod = .get, headers: [String: String] = [:], body: Data? = nil) {
         self.url = url
         self.method = method
         self.headers = headers
         self.body = body
     }
-
-    public func send<D: Decodable>(as type: D.Type) async throws -> D {
-        let (data, _) = try await performRequest()
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-        do {
-            return try decoder.decode(D.self, from: data)
-        } catch {
-            throw URLManagerError.decodingError
-        }
-    }
-
-    public func sendRaw() async throws -> Data {
-        let (data, _) = try await performRequest()
-        return data
+    
+    
+    public func get<D: Decodable>(as type: D.Type) async throws -> D {
+        var requestCopy = self
+        requestCopy.method = .get
+        return try await requestCopy.performRequest(as: type)
     }
     
-    public func sendWithoutResponse() async throws {
-        _ = try await performRequest()
+    public func post<D: Decodable>(as type: D.Type) async throws -> D {
+        var requestCopy = self
+        requestCopy.method = .post
+        return try await requestCopy.performRequest(as: type)
     }
-
-    public func performRequest() async throws -> (Data, HTTPURLResponse) {
+    
+    public func put<D: Decodable>(as type: D.Type) async throws -> D {
+        var requestCopy = self
+        requestCopy.method = .put
+        return try await requestCopy.performRequest(as: type)
+    }
+    
+    public func delete<D: Decodable>(as type: D.Type) async throws -> D {
+        var requestCopy = self
+        requestCopy.method = .delete
+        return try await requestCopy.performRequest(as: type)
+    }
+    
+    private func performRequest<D: Decodable>(as type: D.Type) async throws -> D {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
-
-        if [.post, .put, .patch].contains(method) {
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = body
+        request.httpBody = body
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw URLManagerError.invalidResponse
+            }
+            
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                throw URLManagerError.serverError(statusCode: httpResponse.statusCode)
+            }
+            
+            do {
+                return try JSONDecoder().decode(D.self, from: data)
+            } catch {
+                throw URLManagerError.decodingError
+            }
+        } catch {
+            throw URLManagerError.networkError(error)
         }
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLManagerError.invalidResponse
-        }
-
-        guard 200..<300 ~= httpResponse.statusCode else {
-            throw URLManagerError.serverError(statusCode: httpResponse.statusCode)
-        }
-
-        return (data, httpResponse)
     }
 }
