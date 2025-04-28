@@ -17,9 +17,7 @@ public enum URLManagerError: Error {
     case serverError(statusCode: Int)
     case decodingError
     case custom(message: String)
-}
 
-extension URLManagerError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidResponse:
