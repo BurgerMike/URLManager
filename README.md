@@ -1,75 +1,130 @@
-# 🌐 URLManager
 
-**URLManager** es un paquete ligero y moderno en Swift diseñado para simplificar las solicitudes HTTP usando `async/await` y `Codable`. Ofrece una manera flexible y limpia de interactuar con APIs, permitiendo decodificación automática, manejo de datos crudos y peticiones sin respuesta esperada.
+# URLManager
 
----
-
-## 🚀 Características
-- ✅ Soporte para métodos HTTP: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
-- ✅ Decodificación automática con `Codable`.
-- ✅ Obtención de datos crudos (`Data`).
-- ✅ Peticiones sin respuesta (`sendWithoutResponse`).
-- ✅ Manejo de errores claro con `URLManagerError`.
-- ✅ 100% Swift puro, sin dependencias externas.
+`URLManager` es un paquete ligero y moderno en Swift diseñado para simplificar las solicitudes HTTP usando `async/await`. Soporta operaciones GET, POST, PUT, DELETE, con manejo de headers personalizados y decodificación automática con `Codable`.
 
 ---
 
-## ⚡ Instalación
+## 🚀 Instalación
 
-Agrega el paquete vía **Swift Package Manager**:
+Agrega el paquete a tu proyecto Swift mediante Swift Package Manager:
 
 ```
-https://github.com/TuUsuario/URLManager.git
+https://github.com/BurgerMike/URLManager.git
 ```
 
 ---
 
-## 🎨 Ejemplos de Uso
+## 📦 Uso Básico
 
-### 🔹 1. Decodificar respuesta JSON
+### 1. Importar el paquete
+```swift
+import URLManager
+```
+
+### 2. Realizar una petición GET
 
 ```swift
-let manager = URLManager(url: URL(string: "https://api.example.com/user/1")!, method: .get)
+let manager = URLManager(url: URL(string: "https://api.ejemplo.com/usuario")!)
 
-struct User: Codable {
+struct Usuario: Codable {
     let id: Int
-    let name: String
+    let nombre: String
 }
 
-let user: User = try await manager.send(as: User.self)
+do {
+    let usuario: Usuario = try await manager.get()
+    print(usuario.nombre)
+} catch {
+    print("Error en la solicitud: \(error)")
+}
 ```
 
 ---
 
-### 🔹 2. Obtener datos crudos
+## ✍️ Enviar Encabezados Personalizados
+
+Puedes incluir headers como tokens de autorización o content-type en cualquier solicitud:
 
 ```swift
-let data = try await manager.sendRaw()
-// Procesar Data manualmente
+let headers = [
+    "Authorization": "Bearer tu_token",
+    "Content-Type": "application/json"
+]
+
+do {
+    let usuario: Usuario = try await manager.get(headers: headers)
+    print(usuario)
+} catch {
+    print("Error: \(error)")
+}
 ```
 
 ---
 
-### 🔹 3. Enviar sin esperar respuesta
+## 📤 Ejemplo de POST
 
 ```swift
-try await manager.sendWithoutResponse()
+struct NuevoUsuario: Codable {
+    let nombre: String
+    let correo: String
+}
+
+let nuevo = NuevoUsuario(nombre: "Miguel", correo: "miguel@ejemplo.com")
+
+do {
+    let response: Usuario = try await manager.post(body: nuevo)
+    print("Usuario creado: \(response.nombre)")
+} catch {
+    print("Error al crear usuario: \(error)")
+}
 ```
 
 ---
 
-## ⚙️ Manejo de Errores
+## ⚠️ Manejo de Errores
+
+`URLManager` lanza errores descriptivos que puedes capturar fácilmente:
 
 ```swift
 do {
-    let user: User = try await manager.send(as: User.self)
-} catch let error as URLManagerError {
-    print(error.localizedDescription)
+    let data: Usuario = try await manager.get()
+} catch URLManagerError.invalidURL {
+    print("La URL no es válida.")
+} catch URLManagerError.serverError(let statusCode) {
+    print("Error del servidor: \(statusCode)")
+} catch {
+    print("Otro error: \(error.localizedDescription)")
 }
 ```
+
+---
+
+## ✅ Métodos Soportados
+
+- `get(headers:)`
+- `post(body:headers:)`
+- `put(body:headers:)`
+- `delete(headers:)`
+
+Todos usando `async/await` y compatibles con cualquier modelo que conforme a `Codable`.
+
+---
+
+## 📚 Requisitos
+
+- Swift 5.7+
+- iOS 14+ / macOS 11+
+
+---
+
+## 👨‍💻 Autor
+
+**Miguel Carlos Elizondo Martinez**  
+GitHub: [BurgerMike](https://github.com/BurgerMike)
 
 ---
 
 ## 📄 Licencia
-Este proyecto está bajo la Licencia MIT.
 
+Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
