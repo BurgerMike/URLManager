@@ -21,11 +21,32 @@ public struct URLManager: Request {
     }
 
     public func send<D: Decodable>(as type: D.Type) async throws -> D {
+        let (data, _) = try await performRequest()
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        do {
+            return try decoder.decode(D.self, from: data)
+        } catch {
+            throw URLManagerError.decodingError
+        }
+    }
+
+    public func sendRaw() async throws -> Data {
+        let (data, _) = try await performRequest()
+        return data
+    }
+    
+    public func sendWithoutResponse() async throws {
+        _ = try await performRequest()
+    }
+
+    private func performRequest() async throws -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
-        
-        if method == .post || method == .put {
+
+        if [.post, .put, .patch].contains(method) {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = body
         }
@@ -40,15 +61,6 @@ public struct URLManager: Request {
             throw URLManagerError.serverError(statusCode: httpResponse.statusCode)
         }
 
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-        do {
-            return try decoder.decode(D.self, from: data)
-        } catch {
-            throw URLManagerError.decodingError
-        }
+        return (data, httpResponse)
     }
 }
-
-

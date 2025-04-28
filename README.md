@@ -1,140 +1,75 @@
+# 🌐 URLManager
 
-# URLManager 🚀
+**URLManager** es un paquete ligero y moderno en Swift diseñado para simplificar las solicitudes HTTP usando `async/await` y `Codable`. Ofrece una manera flexible y limpia de interactuar con APIs, permitiendo decodificación automática, manejo de datos crudos y peticiones sin respuesta esperada.
 
-**URLManager** es un paquete ligero, moderno y flexible en Swift que simplifica la creación y ejecución de solicitudes HTTP utilizando `async/await`. Diseñado para ser fácil de usar, pero lo suficientemente potente para proyectos profesionales.
+---
 
-## 📌 Características
-- ✅ Soporte para métodos HTTP: `GET`, `POST`, `PUT`, `DELETE`.
-- ✅ Basado en protocolos para mayor flexibilidad.
-- ✅ Manejo profesional de errores personalizados.
+## 🚀 Características
+- ✅ Soporte para métodos HTTP: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS.
 - ✅ Decodificación automática con `Codable`.
-- ✅ Compatible con Swift 6 y Swift Concurrency (`async/await`).
-- ✅ Sin dependencias externas.
-- ✅ Soporte multiplataforma: iOS, macOS, watchOS, tvOS.
+- ✅ Obtención de datos crudos (`Data`).
+- ✅ Peticiones sin respuesta (`sendWithoutResponse`).
+- ✅ Manejo de errores claro con `URLManagerError`.
+- ✅ 100% Swift puro, sin dependencias externas.
 
-## 🚀 Instalación
+---
 
-**Swift Package Manager (SPM)**
+## ⚡ Instalación
 
-Agrega este repositorio en Xcode:
-
-1. Ve a `File > Add Packages...`
-2. Ingresa la URL del repositorio:
+Agrega el paquete vía **Swift Package Manager**:
 
 ```
-https://github.com/TU-USUARIO/URLManager.git
+https://github.com/TuUsuario/URLManager.git
 ```
 
-3. Selecciona la versión que desees y añade el package a tu proyecto.
+---
 
-## ⚡️ Uso Rápido
+## 🎨 Ejemplos de Uso
+
+### 🔹 1. Decodificar respuesta JSON
 
 ```swift
-import URLManager
+let manager = URLManager(url: URL(string: "https://api.example.com/user/1")!, method: .get)
 
-struct User: Decodable {
+struct User: Codable {
     let id: Int
     let name: String
 }
 
-let manager = URLManager(
-    url: URL(string: "https://jsonplaceholder.typicode.com/users/1")!,
-    method: .get
-)
-
-Task {
-    do {
-        let user: User = try await manager.send(as: User.self)
-        print("Nombre del usuario: \(user.name)")
-    } catch {
-        print("Ocurrió un error: \(error)")
-    }
-}
+let user: User = try await manager.send(as: User.self)
 ```
 
-## 🔧 Configuración Avanzada
+---
 
-### ➤ Agregar Headers Personalizados
+### 🔹 2. Obtener datos crudos
 
 ```swift
-let manager = URLManager(
-    url: URL(string: "https://api.example.com/data")!,
-    method: .get,
-    headers: ["Authorization": "Bearer YOUR_TOKEN"]
-)
+let data = try await manager.sendRaw()
+// Procesar Data manualmente
 ```
 
-### ➤ Enviar Datos con POST o PUT
+---
+
+### 🔹 3. Enviar sin esperar respuesta
 
 ```swift
-struct NewUser: Encodable {
-    let name: String
-    let email: String
-}
-
-let newUser = NewUser(name: "Miguel", email: "miguel@example.com")
-let jsonData = try JSONEncoder().encode(newUser)
-
-let manager = URLManager(
-    url: URL(string: "https://api.example.com/users")!,
-    method: .post,
-    headers: ["Authorization": "Bearer YOUR_TOKEN"],
-    body: jsonData
-)
-
-Task {
-    do {
-        let response: User = try await manager.send(as: User.self)
-        print(response)
-    } catch {
-        print("Error en la solicitud: \(error)")
-    }
-}
+try await manager.sendWithoutResponse()
 ```
 
-## ⚠️ Manejo de Errores
+---
 
-`URLManager` utiliza un enum de errores personalizados para identificar mejor los problemas:
-
-```swift
-enum URLManagerError: Error {
-    case invalidResponse
-    case serverError(statusCode: Int)
-    case decodingError
-}
-```
-
-Ejemplo de manejo:
+## ⚙️ Manejo de Errores
 
 ```swift
 do {
-    let data: User = try await manager.send(as: User.self)
-} catch URLManagerError.serverError(let statusCode) {
-    print("Error del servidor: \(statusCode)")
-} catch {
-    print("Otro error: \(error)")
+    let user: User = try await manager.send(as: User.self)
+} catch let error as URLManagerError {
+    print(error.localizedDescription)
 }
 ```
 
-## 📱 Plataformas Soportadas
-- iOS 15+
-- macOS 12+
-- watchOS 8+
-- tvOS 15+
-
-## 🚧 Roadmap / Futuras Mejoras
-- [ ] Soporte para parámetros en URLs (`Query Parameters`).
-- [ ] Multipart/Form-Data para subida de archivos.
-- [ ] Retries automáticos en caso de fallo.
-- [ ] Logs más detallados en modo debug.
-- [ ] Compatibilidad con OAuth 2.0.
-
-## 🤝 Contribuciones
-¡Las contribuciones son bienvenidas! Si deseas mejorar este paquete, siéntete libre de hacer un fork y enviar un pull request.
+---
 
 ## 📄 Licencia
-Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la Licencia MIT.
 
-## ✨ Autor
-Desarrollado por **Miguel Carlos Elizondo Martinez**.  
-Si te gusta este paquete, no dudes en darle ⭐ en GitHub.

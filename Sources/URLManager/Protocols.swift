@@ -16,5 +16,6 @@ public protocol URLManagerProtocol {
 
 public protocol Request: URLManagerProtocol {
     func send<D: Decodable>(as type: D.Type) async throws -> D
-
+    func sendRaw() async throws -> Data
+    func sendWithoutResponse() async throws
 }
