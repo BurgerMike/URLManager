@@ -88,15 +88,40 @@ do {
 
 ## ⚠️ Manejo de Errores
 
-`URLManager` lanza errores descriptivos que puedes capturar fácilmente:
+`URLManager` maneja los errores de forma detallada mediante el enum `URLManagerError`:
+
+- `invalidURL`: La URL proporcionada no es válida.
+- `invalidResponse`: La respuesta del servidor no es un HTTPURLResponse válido.
+- `serverError(statusCode: Int, data: Data?)`: El servidor respondió con error. También puedes inspeccionar el cuerpo (`data`) si deseas más detalles.
+- `decodingError(Error)`: Ocurrió un error al decodificar los datos recibidos.
+- `networkError(Error)`: Error relacionado a la conexión de red.
+- `custom(message: String)`: Mensaje de error personalizado.
+
+Además, durante cualquier solicitud, `URLManager` imprimirá en consola:
+
+- URL solicitada
+- Método HTTP
+- Headers enviados
+- Cuerpo enviado (body)
+- Código de respuesta HTTP
+- Headers de respuesta
+- Datos crudos de respuesta
+- Errores de red o decodificación (detallados)
+
+### Ejemplo de captura de errores:
 
 ```swift
 do {
     let data: Usuario = try await manager.get()
 } catch URLManagerError.invalidURL {
     print("La URL no es válida.")
-} catch URLManagerError.serverError(let statusCode) {
-    print("Error del servidor: \(statusCode)")
+} catch URLManagerError.serverError(let statusCode, let data) {
+    let message = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Sin detalles"
+    print("Error del servidor: \(statusCode), Respuesta: \(message)")
+} catch URLManagerError.decodingError(let error) {
+    print("Error al decodificar datos: \(error.localizedDescription)")
+} catch URLManagerError.networkError(let error) {
+    print("Error de red: \(error.localizedDescription)")
 } catch {
     print("Otro error: \(error.localizedDescription)")
 }

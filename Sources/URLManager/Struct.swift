@@ -47,6 +47,13 @@ public struct URLRequestManager: RequestProtocol {
     }
     
     private func performRequest<D: Decodable>(as type: D.Type) async throws -> D {
+        print("🌐 URL: \(url)")
+        print("🔵 Method: \(method.rawValue)")
+        print("📋 Headers: \(headers)")
+        if let body = body, let bodyString = String(data: body, encoding: .utf8) {
+            print("📦 Body: \(bodyString)")
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
@@ -54,21 +61,35 @@ public struct URLRequestManager: RequestProtocol {
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📬 Response Code: \(httpResponse.statusCode)")
+                print("📋 Response Headers: \(httpResponse.allHeaderFields)")
+            }
+            print("📦 Raw Response Data:")
+            if let rawString = String(data: data, encoding: .utf8) {
+                print(rawString)
+            }
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw URLManagerError.invalidResponse
             }
             
             guard (200..<300).contains(httpResponse.statusCode) else {
-                throw URLManagerError.serverError(statusCode: httpResponse.statusCode)
+                throw URLManagerError.serverError(statusCode: httpResponse.statusCode, data: data)
             }
             
             do {
                 return try JSONDecoder().decode(D.self, from: data)
             } catch {
-                throw URLManagerError.decodingError
+                print("❌ Error decoding data: \(error)")
+                throw URLManagerError.decodingError(error)
             }
         } catch {
+            print("❌ Network error: \(error)")
             throw URLManagerError.networkError(error)
         }
+    }
+    
+    public func execute<D: Decodable>(as type: D.Type) async throws -> D {
+        return try await performRequest(as: type)
     }
 }

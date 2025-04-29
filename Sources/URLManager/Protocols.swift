@@ -17,4 +17,5 @@ public protocol RequestProtocol {
     func post<D: Decodable>(as type: D.Type) async throws -> D
     func put<D: Decodable>(as type: D.Type) async throws -> D
     func delete<D: Decodable>(as type: D.Type) async throws -> D
+    func execute<D: Decodable>(as type: D.Type) async throws -> D
 }

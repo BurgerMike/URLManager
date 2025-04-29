@@ -15,25 +15,26 @@ public enum HTTPMethod: String {
 public enum URLManagerError: LocalizedError {
     case invalidURL
     case invalidResponse
-    case serverError(statusCode: Int)
-    case decodingError
+    case serverError(statusCode: Int, data: Data?)
+    case decodingError(Error)
     case networkError(Error)
     case custom(message: String)
 
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "La URL proporcionada no es válida."
+            return "❌ URL no válida."
         case .invalidResponse:
-            return "La respuesta del servidor no es válida."
-        case .serverError(let statusCode):
-            return "El servidor respondió con un error. Código: \(statusCode)."
-        case .decodingError:
-            return "No se pudo decodificar la respuesta JSON."
+            return "❌ Respuesta inválida del servidor."
+        case .serverError(let code, let data):
+            let message = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Sin detalles."
+            return "❌ Error del servidor. Código: \(code). Respuesta: \(message)"
+        case .decodingError(let error):
+            return "❌ Error al decodificar datos: \(error.localizedDescription)"
         case .networkError(let error):
-            return "Error de red: \(error.localizedDescription)"
+            return "❌ Error de red: \(error.localizedDescription)"
         case .custom(let message):
-            return message
+            return "❌ \(message)"
         }
     }
 }
