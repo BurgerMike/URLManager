@@ -13,9 +13,5 @@ public protocol RequestProtocol {
     var headers: [String: String] { get set }
     var body: Data? { get set }
     
-    func get<D: Decodable>(as type: D.Type) async throws -> D
-    func post<D: Decodable>(as type: D.Type) async throws -> D
-    func put<D: Decodable>(as type: D.Type) async throws -> D
-    func delete<D: Decodable>(as type: D.Type) async throws -> D
-    func execute<D: Decodable>(as type: D.Type) async throws -> D
+    func Action<D: Decodable>(as type: D.Type) async throws -> D
 }

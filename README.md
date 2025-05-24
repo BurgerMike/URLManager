@@ -1,142 +1,104 @@
-# URLManager
+# 📦 URLManager
 
-`URLManager` es un paquete ligero y moderno en Swift diseñado para simplificar las solicitudes HTTP usando `async/await`. Soporta operaciones GET, POST, PUT, DELETE, con manejo de headers personalizados y decodificación automática con `Codable`.
-
----
-
-## 🚀 Instalación
-
-Agrega el paquete a tu proyecto Swift mediante Swift Package Manager:
-
-```
-https://github.com/BurgerMike/URLManager.git
-```
+`URLManager` es un paquete Swift moderno que simplifica solicitudes HTTP usando `async/await`, soportando múltiples métodos (`GET`, `POST`, etc.), codificación `Codable`, manejo robusto de errores y compatibilidad con respuestas JSON o crudas (`Data`).
 
 ---
 
-## 📦 Uso Básico
+## ✅ Características
 
-### 1. Importar el paquete
+- Soporte completo para métodos HTTP (`GET`, `POST`, `PUT`, `DELETE`, etc.)
+- Decodificación automática con `Codable`
+- Manejo de errores robusto con `URLManagerError`
+- Peticiones genéricas con un solo método `Action(as:)`
+- Validaciones internas para prevenir crasheos
+- Preparado para respuestas `Data` y archivos
+- Logs automáticos para depuración
+
+---
+
+## 🚀 Uso Básico
+
+### 1. Modelo
+
 ```swift
-import URLManager
-```
-
-### 2. Realizar una petición GET
-
-```swift
-let manager = URLManager(url: URL(string: "https://api.ejemplo.com/usuario")!)
-
-struct Usuario: Codable {
+struct Usuario: Decodable {
     let id: Int
     let nombre: String
 }
+```
+
+### 2. Crear y ejecutar solicitud
+
+```swift
+var request = RequestManager(
+    url: URL(string: "https://api.ejemplo.com/usuarios")!,
+    method: .get
+)
 
 do {
-    let usuario: Usuario = try await manager.get()
-    print(usuario.nombre)
+    let usuarios: [Usuario] = try await request.Action(as: [Usuario].self)
+    print("Usuarios:", usuarios)
 } catch {
-    print("Error en la solicitud: \(error)")
+    print("Error:", error.localizedDescription)
 }
 ```
 
 ---
 
-## ✍️ Enviar Encabezados Personalizados
-
-Puedes incluir headers como tokens de autorización o content-type en cualquier solicitud:
+## ✍️ Enviar Body y Headers
 
 ```swift
-let headers = [
-    "Authorization": "Bearer tu_token",
-    "Content-Type": "application/json"
-]
+let usuarioNuevo = Usuario(id: 0, nombre: "Carlos")
+let jsonData = try JSONEncoder().encode(usuarioNuevo)
 
-do {
-    let usuario: Usuario = try await manager.get(headers: headers)
-    print(usuario)
-} catch {
-    print("Error: \(error)")
-}
-```
+var request = RequestManager(
+    url: URL(string: "https://api.ejemplo.com/usuarios")!,
+    method: .post,
+    headers: ["Content-Type": "application/json"],
+    body: jsonData
+)
 
----
-
-## 📤 Ejemplo de POST
-
-```swift
-struct NuevoUsuario: Codable {
-    let nombre: String
-    let correo: String
-}
-
-let nuevo = NuevoUsuario(nombre: "Miguel", correo: "miguel@ejemplo.com")
-
-let headers = [
-    "Authorization": "Bearer tu_token",
-    "Content-Type": "application/json"
-]
-
-do {
-    let response: Usuario = try await manager.post(body: nuevo, headers: headers)
-    print("Usuario creado: \(response.nombre)")
-} catch {
-    print("Error al crear usuario: \(error.localizedDescription)")
-}
+let usuarioCreado: Usuario = try await request.Action(as: Usuario.self)
 ```
 
 ---
 
 ## ⚠️ Manejo de Errores
 
-`URLManager` maneja los errores de forma detallada mediante el enum `URLManagerError`:
+Errores posibles a través del enum `URLManagerError`:
 
-- `invalidURL`: La URL proporcionada no es válida.
-- `invalidResponse`: La respuesta del servidor no es un HTTPURLResponse válido.
-- `serverError(statusCode: Int, data: Data?)`: El servidor respondió con error. También puedes inspeccionar el cuerpo (`data`) si deseas más detalles.
-- `decodingError(Error)`: Ocurrió un error al decodificar los datos recibidos.
-- `networkError(Error)`: Error relacionado a la conexión de red.
-- `custom(message: String)`: Mensaje de error personalizado.
+- `invalidURL`: URL inválida
+- `invalidResponse`: respuesta inesperada del servidor
+- `serverError(statusCode:data)`: código de error HTTP
+- `decodingError`: fallo al parsear JSON
+- `networkError`: problemas de red
+- `custom(message)`: errores definidos manualmente
 
-Además, durante cualquier solicitud, `URLManager` imprimirá en consola:
-
-- URL solicitada
-- Método HTTP
-- Headers enviados
-- Cuerpo enviado (body)
-- Código de respuesta HTTP
-- Headers de respuesta
-- Datos crudos de respuesta
-- Errores de red o decodificación (detallados)
-
-### Ejemplo de captura de errores:
+### Ejemplo:
 
 ```swift
 do {
-    let data: Usuario = try await manager.get()
-} catch URLManagerError.invalidURL {
-    print("La URL no es válida.")
-} catch URLManagerError.serverError(let statusCode, let data) {
-    let message = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Sin detalles"
-    print("Error del servidor: \(statusCode), Respuesta: \(message)")
-} catch URLManagerError.decodingError(let error) {
-    print("Error al decodificar datos: \(error.localizedDescription)")
-} catch URLManagerError.networkError(let error) {
-    print("Error de red: \(error.localizedDescription)")
-} catch {
-    print("Otro error: \(error.localizedDescription)")
+    let usuario: Usuario = try await request.Action(as: Usuario.self)
+} catch let error as URLManagerError {
+    switch error {
+    case .invalidURL:
+        print("URL no válida")
+    case .serverError(let code, let data):
+        print("Error del servidor (\(code)): \(String(data: data ?? Data(), encoding: .utf8) ?? "")")
+    default:
+        print("Error:", error.localizedDescription)
+    }
 }
 ```
 
 ---
 
-## ✅ Métodos Soportados
+## 📥 Descargar datos como `Data`
 
-- `get(headers:)`
-- `post(body:headers:)`
-- `put(body:headers:)`
-- `delete(headers:)`
-
-Todos usando `async/await` y compatibles con cualquier modelo que conforme a `Codable`.
+```swift
+let request = RequestManager(url: URL(string: "https://ejemplo.com/archivo.pdf")!)
+let data: Data = try await request.Action(as: Data.self)
+```
 
 ---
 
@@ -149,85 +111,20 @@ Todos usando `async/await` y compatibles con cualquier modelo que conforme a `Co
 
 ## 👨‍💻 Autor
 
-**Miguel Carlos Elizondo Martinez**  
+**Miguel Carlos Elizondo Martínez**  
 GitHub: [BurgerMike](https://github.com/BurgerMike)
 
 ---
 
-## 🔧 Personalización Avanzada
+## 🚧 Futuras mejoras
 
-Si necesitas configurar una solicitud manualmente, puedes ajustar los parámetros del `URLManager`:
-
-```swift
-var manager = URLManager(url: URL(string: "https://api.ejemplo.com/usuarios/10")!)
-manager.headers = ["Authorization": "Bearer token_personalizado"]
-manager.body = try? JSONEncoder().encode(["campo": "valor"])
-
-do {
-    let usuario: Usuario = try await manager.put(body: manager.body, headers: manager.headers)
-    print("Usuario actualizado: \(usuario.nombre)")
-} catch {
-    print("Error en la actualización: \(error.localizedDescription)")
-}
-```
+- [ ] Query parameters dinámicos
+- [ ] Soporte para `multipart/form-data`
+- [ ] Modo silencioso para producción
+- [ ] Retry automático en errores de red
 
 ---
 
-## 🛠 Ejemplo Completo de Uso
+## 🤝 Contribuciones
 
-```swift
-struct Usuario: Codable {
-    let id: Int
-    let nombre: String
-}
-
-let url = URL(string: "https://api.ejemplo.com/usuarios")!
-let nuevoUsuario = Usuario(id: 20, nombre: "Carlos")
-
-let headers = ["Authorization": "Bearer abc123"]
-
-let manager = URLManager(url: url, headers: headers, body: try? JSONEncoder().encode(nuevoUsuario))
-
-Task {
-    do {
-        let creado: Usuario = try await manager.post(as: Usuario.self)
-        print("Usuario creado: \(creado.nombre)")
-    } catch {
-        print("Error: \(error.localizedDescription)")
-    }
-}
-```
-
----
-
-## 🚧 Futuras Mejoras
-
-- [ ] Soporte para **Query Parameters** dinámicos.
-- [ ] Configuración de **Timeouts** personalizados.
-- [ ] Logs automáticos en modo Debug.
-- [ ] Soporte para multipart/form-data (subida de archivos).
-- [ ] Mejoras en el manejo de respuestas vacías (`Void`).
-
----
-
-## ❓ FAQ
-
-**¿Puedo enviar parámetros en la URL?**  
-Sí, pero debes construirlos manualmente por ahora. Próximamente se añadirá soporte nativo para query parameters.
-
----
-
-**¿Cómo manejo respuestas vacías?**  
-Si el servidor responde con éxito pero sin datos, puedes crear un modelo vacío o ajustar la lógica de decodificación.
-
----
-
-## 🙌 Contribuciones
-
-¡Las contribuciones son bienvenidas! Si deseas mejorar `URLManager`, realiza un fork del repositorio y envía un Pull Request con tus cambios.
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+¡Bienvenidas! Haz fork y envía un PR.
