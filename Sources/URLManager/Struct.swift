@@ -32,29 +32,31 @@ public struct RequestManager: RequestProtocol {
             print("📦 Body: \(bodyString)")
         }
 
+        let (data, _) = try await ActionResponse()
+        return try JSONDecoder().decode(D.self, from: data)
+    }
+
+    public func ActionRaw() async throws -> Data {
+        let (data, _) = try await ActionResponse()
+        return data
+    }
+
+    public func ActionResponse() async throws -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = headers
         request.httpBody = body
 
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLManagerError.invalidResponse
-            }
-
-            guard (200..<300).contains(httpResponse.statusCode) else {
-                throw URLManagerError.serverError(statusCode: httpResponse.statusCode, data: data)
-            }
-
-            return try JSONDecoder().decode(D.self, from: data)
-        } catch let decodingError as DecodingError {
-            throw URLManagerError.decodingError(decodingError)
-        } catch let urlError as URLError {
-            throw URLManagerError.networkError(urlError)
-        } catch {
-            throw URLManagerError.custom(message: "Error inesperado: \(error.localizedDescription)")
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLManagerError.invalidResponse
         }
+
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            throw URLManagerError.serverError(statusCode: httpResponse.statusCode, data: data)
+        }
+
+        return (data, httpResponse)
     }
 }

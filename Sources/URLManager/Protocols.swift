@@ -14,4 +14,6 @@ public protocol RequestProtocol {
     var body: Data? { get set }
     
     func Action<D: Decodable>(as type: D.Type) async throws -> D
+    func ActionRaw() async throws -> Data
+    func ActionResponse() async throws -> (Data, HTTPURLResponse)
 }
