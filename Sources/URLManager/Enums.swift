@@ -82,3 +82,10 @@ public enum URLManagerError: LocalizedError {
         }
     }
 }
+
+public enum RespuestaWeb {
+    case json(Any)
+    case texto(String)
+    case archivo(Data, mime: String?, sugeridoNombre: String?)
+}
+
