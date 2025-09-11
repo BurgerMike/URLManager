@@ -1,6 +1,9 @@
-import Testing
-@testable import URLManager
 
-@Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+import XCTest
+@testable import URLManager
+final class URLManagerTests:XCTestCase{
+    func testBuild() throws{
+        let u=try URLBuilder(base:URL(string:"https://api.com")!).adding(path:"/v1").build()
+        XCTAssertEqual(u.absoluteString,"https://api.com/v1")
+    }
 }
