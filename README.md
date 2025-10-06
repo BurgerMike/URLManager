@@ -201,3 +201,4 @@ XCTAssertEqual(u.absoluteString, "https://api.com/v1")
 ## Licencia
 
 MIT (ver `LICENSE`)
+
